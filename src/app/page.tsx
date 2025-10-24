@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, ChangeEvent } from "react";
 import { Advocate, AdvocatesResponse } from "@/types/advocate";
 
 export default function Home() {
@@ -8,6 +8,7 @@ export default function Home() {
   const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchAdvocates = async () => {
@@ -34,28 +35,40 @@ export default function Home() {
     fetchAdvocates();
   }, []);
 
-  const onChange = (e) => {
-    const searchTerm = e.target.value;
+  const filterAdvocates = useCallback(
+    (term: string) => {
+      if (!term) {
+        setFilteredAdvocates(advocates);
+        return;
+      }
 
-    document.getElementById("search-term").innerHTML = searchTerm;
+      const lowerSearchTerm = term.toLowerCase();
+      const filtered = advocates.filter((advocate) => {
+        return (
+          advocate.firstName.toLowerCase().includes(lowerSearchTerm) ||
+          advocate.lastName.toLowerCase().includes(lowerSearchTerm) ||
+          advocate.city.toLowerCase().includes(lowerSearchTerm) ||
+          advocate.degree.toLowerCase().includes(lowerSearchTerm) ||
+          advocate.specialties.some((specialty) =>
+            specialty.toLowerCase().includes(lowerSearchTerm)
+          ) ||
+          advocate.yearsOfExperience.toString().includes(term)
+        );
+      });
 
-    console.log("filtering advocates...");
-    const filteredAdvocates = advocates.filter((advocate) => {
-      return (
-        advocate.firstName.includes(searchTerm) ||
-        advocate.lastName.includes(searchTerm) ||
-        advocate.city.includes(searchTerm) ||
-        advocate.degree.includes(searchTerm) ||
-        advocate.specialties.includes(searchTerm) ||
-        advocate.yearsOfExperience.includes(searchTerm)
-      );
-    });
+      setFilteredAdvocates(filtered);
+    },
+    [advocates]
+  );
 
-    setFilteredAdvocates(filteredAdvocates);
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    filterAdvocates(value);
   };
 
-  const onClick = () => {
-    console.log(advocates);
+  const handleReset = () => {
+    setSearchTerm("");
     setFilteredAdvocates(advocates);
   };
 
@@ -82,32 +95,36 @@ export default function Home() {
         <p>
           Searching for: <span id="search-term"></span>
         </p>
-        <input style={{ border: "1px solid black" }} onChange={onChange} />
-        <button onClick={onClick}>Reset Search</button>
+        <input style={{ border: "1px solid black" }} onChange={handleSearch} />
+        <button onClick={handleReset}>Reset Search</button>
       </div>
       <br />
       <br />
       <table>
         <thead>
-          <th>First Name</th>
-          <th>Last Name</th>
-          <th>City</th>
-          <th>Degree</th>
-          <th>Specialties</th>
-          <th>Years of Experience</th>
-          <th>Phone Number</th>
+          <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>City</th>
+            <th>Degree</th>
+            <th>Specialties</th>
+            <th>Years of Experience</th>
+            <th>Phone Number</th>
+          </tr>
         </thead>
         <tbody>
           {filteredAdvocates.map((advocate) => {
             return (
-              <tr>
+              <tr key={advocate.phoneNumber}>{/* TODO: us id */}
                 <td>{advocate.firstName}</td>
                 <td>{advocate.lastName}</td>
                 <td>{advocate.city}</td>
                 <td>{advocate.degree}</td>
                 <td>
                   {advocate.specialties.map((s) => (
-                    <div>{s}</div>
+                    <div
+                      key={advocate.phoneNumber + s }
+                    >{s}</div>
                   ))}
                 </td>
                 <td>{advocate.yearsOfExperience}</td>
