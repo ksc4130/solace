@@ -6,11 +6,14 @@ import { Advocate, AdvocatesResponse } from "@/types/advocate";
 export default function Home() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
   const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchAdvocates = async () => {
       try {
-        // TODO: Add loading functionality and feedback
+        setIsLoading(true);
+        setError(null);
         const response = await fetch("/api/advocates");
 
         if (!response.ok) {
@@ -21,8 +24,10 @@ export default function Home() {
         setAdvocates(jsonResponse.data);
         setFilteredAdvocates(jsonResponse.data);
       } catch (err) {
-        // TODO: add error handling functionality and feedback
+        setError(err instanceof Error ? err.message : "An error occurred");
         console.error("Error fetching advocates:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -53,6 +58,19 @@ export default function Home() {
     console.log(advocates);
     setFilteredAdvocates(advocates);
   };
+
+  if (error) {
+    return (
+      <main className="min-h-screen p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+            <h2 className="text-lg font-semibold mb-2">Error</h2>
+            <p>{error}</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main style={{ margin: "24px" }}>
