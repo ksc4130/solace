@@ -1,19 +1,32 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Advocate, AdvocatesResponse } from "@/types/advocate";
 
 export default function Home() {
-  const [advocates, setAdvocates] = useState([]);
-  const [filteredAdvocates, setFilteredAdvocates] = useState([]);
+  const [advocates, setAdvocates] = useState<Advocate[]>([]);
+  const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
 
-  useEffect(() => {
-    console.log("fetching advocates...");
-    fetch("/api/advocates").then((response) => {
-      response.json().then((jsonResponse) => {
+    useEffect(() => {
+    const fetchAdvocates = async () => {
+      try {
+        // TODO: Add loading functionality and feedback
+        const response = await fetch("/api/advocates");
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch advocates: ${response.statusText}`);
+        }
+
+        const jsonResponse: AdvocatesResponse = await response.json();
         setAdvocates(jsonResponse.data);
         setFilteredAdvocates(jsonResponse.data);
-      });
-    });
+      } catch (err) {
+        // TODO: add error handling functionality and feedback
+        console.error("Error fetching advocates:", err);
+      }
+    };
+
+    fetchAdvocates();
   }, []);
 
   const onChange = (e) => {
