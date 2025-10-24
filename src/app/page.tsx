@@ -115,7 +115,7 @@ export default function Home() {
         <tbody>
           {filteredAdvocates.map((advocate) => {
             return (
-              <tr key={advocate.phoneNumber}>{/* TODO: us id */}
+              <tr key={advocate.id}>
                 <td>{advocate.firstName}</td>
                 <td>{advocate.lastName}</td>
                 <td>{advocate.city}</td>
@@ -123,7 +123,7 @@ export default function Home() {
                 <td>
                   {advocate.specialties.map((s) => (
                     <div
-                      key={advocate.phoneNumber + s }
+                      key={ `${advocate.id}-${s}` }
                     >{s}</div>
                   ))}
                 </td>
