@@ -1,3 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  @font-face {
+    font-family: 'Mollie Glaston';
+    src: local('Playfair Display'), local('PlayfairDisplay-Regular');
+  }
+}
+
+h1 {
+    font-family: 'Mollie Glaston', var(--font-playfair), serif;
+}
