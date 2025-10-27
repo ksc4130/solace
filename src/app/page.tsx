@@ -1,225 +1,162 @@
-"use client";
-
-import { useEffect, useState, useCallback, ChangeEvent } from "react";
-import { Advocate, AdvocatesResponse } from "@/types/advocate";
-
-export default function Home() {
-  const [advocates, setAdvocates] = useState<Advocate[]>([]);
-  const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    const fetchAdvocates = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const response = await fetch("/api/advocates");
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch advocates: ${response.statusText}`);
-        }
-
-        const jsonResponse: AdvocatesResponse = await response.json();
-        setAdvocates(jsonResponse.data);
-        setFilteredAdvocates(jsonResponse.data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-        console.error("Error fetching advocates:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAdvocates();
-  }, []);
-
-  const filterAdvocates = useCallback(
-    (term: string) => {
-      if (!term) {
-        setFilteredAdvocates(advocates);
-        return;
-      }
-
-      const lowerSearchTerm = term.toLowerCase();
-      const filtered = advocates.filter((advocate) => {
-        return (
-          advocate.firstName.toLowerCase().includes(lowerSearchTerm) ||
-          advocate.lastName.toLowerCase().includes(lowerSearchTerm) ||
-          advocate.city.toLowerCase().includes(lowerSearchTerm) ||
-          advocate.degree.toLowerCase().includes(lowerSearchTerm) ||
-          advocate.specialties.some((specialty) =>
-            specialty.toLowerCase().includes(lowerSearchTerm)
-          ) ||
-          advocate.yearsOfExperience.toString().includes(term)
-        );
-      });
-
-      setFilteredAdvocates(filtered);
-    },
-    [advocates]
-  );
-
-  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    filterAdvocates(value);
-  };
-
-  const handleReset = () => {
-    setSearchTerm("");
-    setFilteredAdvocates(advocates);
-  };
-
-  const formatPhoneNumber = (phoneNumber: number) => {
-    const phone = phoneNumber.toString();
-    return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
-  };
-
-  if (error) {
-    return (
-      <main className="min-h-screen p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
-            <h2 className="text-lg font-semibold mb-2">Error</h2>
-            <p>{error}</p>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
+export default function HomePage() {
   return (
-    <main className="min-h-screen p-8 bg-gray-50">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Solace Advocates
-        </h1>
-        {/* Search Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-            <div className="flex-1">
-              <label
-                htmlFor="search"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Search Advocates
-              </label>
-              <input
-                id="search"
-                type="text"
-                value={searchTerm}
-                onChange={handleSearch}
-                placeholder="Search by name, city, degree, specialty, or experience"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              {searchTerm && (
-                <p className="mt-2 text-sm text-gray-600">
-                  Showing results for:{" "}
-                  <span className="font-medium">{searchTerm}</span>
-                </p>
-              )}
-            </div>
-            <button
-              onClick={handleReset}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <section className="py-16 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-5xl md:text-7xl font-light text-gray-900 mb-8 tracking-tight">
+            Don&apos;t navigate your health alone.
+          </h1>
+          <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto">
+            Find an advocate who will help untangle your healthcare by phone or video—no matter what you need—covered by Medicare.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a
+              href="/advocate-search"
+              className="bg-[#D4A574] text-black px-8 py-4 rounded-full font-medium text-lg hover:bg-[#C19660] transition-colors"
             >
-              Reset Search
-            </button>
+              Find an Advocate
+            </a>
           </div>
         </div>
+      </section>
 
-        {/* Loading State */}
-        {isLoading ? (
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            <div className="flex justify-center items-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            </div>
-          </div>
-        ) : (
-          /* Table */
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      City
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Degree
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Specialties
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Experience
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Phone
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAdvocates.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="px-6 py-4 text-center text-gray-500"
-                      >
-                        No advocates found matching your search criteria.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredAdvocates.map((advocate) => (
-                      <tr key={advocate.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray">
-                            {advocate.firstName} {advocate.lastName}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {advocate.city}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {advocate.degree}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-wrap gap-1">
-                            {advocate.specialties.map((specialty, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                              >
-                                {specialty}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {advocate.yearsOfExperience} years
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatPhoneNumber(advocate.phoneNumber)}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {filteredAdvocates.length > 0 && (
-              <div className="bg-gray-50 px-6 py-3 text-sm text-gray-600">
-                Showing {filteredAdvocates.length} of {advocates.length} advocates
+      {/* Services Section */}
+      <section className="py-16 px-4 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-2xl font-light text-gray-700 mb-12">
+            What can we help you with today?
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Navigate a new diagnosis */}
+            <a href="#" className="group bg-white rounded-2xl shadow-sm hover:shadow-md transition-all p-8 flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-2xl font-light">
+                  Navigate a <span className="text-[#347866] font-normal">new diagnosis</span>
+                </p>
               </div>
-            )}
+              <div className="flex items-center gap-4">
+                <img 
+                  src="https://cdn.prod.website-files.com/632a21d0ec93a082b11988a0/65d577f2611a585c1062783b_navigation.svg" 
+                  alt="healthcare icon illustration"
+                  className="w-20 h-20"
+                />
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.60449 6.50011H8.18949L5.74949 8.94011C5.55449 9.13511 5.55449 9.45511 5.74949 9.65011C5.94449 9.84511 6.25949 9.84511 6.45449 9.65011L9.74949 6.35511C9.94449 6.16011 9.94449 5.84511 9.74949 5.65011L6.45949 2.35011C6.26449 2.15511 5.94949 2.15511 5.75449 2.35011C5.55949 2.54511 5.55949 2.86011 5.75449 3.05511L8.18949 5.50011H2.60449C2.32949 5.50011 2.10449 5.72511 2.10449 6.00011C2.10449 6.27511 2.32949 6.50011 2.60449 6.50011Z" fill="currentColor"></path>
+                  </svg>
+                </div>
+              </div>
+            </a>
+
+            {/* Care for your loved ones */}
+            <a href="#" className="group bg-white rounded-2xl shadow-sm hover:shadow-md transition-all p-8 flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-2xl font-light">
+                  Care for your <span className="text-[#D4A574] font-normal">loved ones</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <img 
+                  src="https://cdn.prod.website-files.com/632a21d0ec93a082b11988a0/65d577f2611a585c1062783e_loved%20one.svg" 
+                  alt="two hearts illustration"
+                  className="w-20 h-20"
+                />
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.60449 6.50011H8.18949L5.74949 8.94011C5.55449 9.13511 5.55449 9.45511 5.74949 9.65011C5.94449 9.84511 6.25949 9.84511 6.45449 9.65011L9.74949 6.35511C9.94449 6.16011 9.94449 5.84511 9.74949 5.65011L6.45949 2.35011C6.26449 2.15511 5.94949 2.15511 5.75449 2.35011C5.55949 2.54511 5.55949 2.86011 5.75449 3.05511L8.18949 5.50011H2.60449C2.32949 5.50011 2.10449 5.72511 2.10449 6.00011C2.10449 6.27511 2.32949 6.50011 2.60449 6.50011Z" fill="currentColor"></path>
+                  </svg>
+                </div>
+              </div>
+            </a>
+
+            {/* Find a doctor or facility */}
+            <a href="#" className="group bg-white rounded-2xl shadow-sm hover:shadow-md transition-all p-8 flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-2xl font-light">
+                  Find a <span className="text-[#D4A574] font-normal">doctor or facility</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <img 
+                  src="https://cdn.prod.website-files.com/632a21d0ec93a082b11988a0/65d577f2611a585c1062783c_facility.svg" 
+                  alt="hospital illustration"
+                  className="w-20 h-20"
+                />
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.60449 6.50011H8.18949L5.74949 8.94011C5.55449 9.13511 5.55449 9.45511 5.74949 9.65011C5.94449 9.84511 6.25949 9.84511 6.45449 9.65011L9.74949 6.35511C9.94449 6.16011 9.94449 5.84511 9.74949 5.65011L6.45949 2.35011C6.26449 2.15511 5.94949 2.15511 5.75449 2.35011C5.55949 2.54511 5.55949 2.86011 5.75449 3.05511L8.18949 5.50011H2.60449C2.32949 5.50011 2.10449 5.72511 2.10449 6.00011C2.10449 6.27511 2.32949 6.50011 2.60449 6.50011Z" fill="currentColor"></path>
+                  </svg>
+                </div>
+              </div>
+            </a>
+
+            {/* Take control of chronic illness */}
+            <a href="#" className="group bg-white rounded-2xl shadow-sm hover:shadow-md transition-all p-8 flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-2xl font-light">
+                  Take <span className="text-[#347866] font-normal">control</span> of chronic illness
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <img 
+                  src="https://cdn.prod.website-files.com/632a21d0ec93a082b11988a0/65d577f2611a585c1062783f_control.svg" 
+                  alt="flexed bicep illustration"
+                  className="w-16 h-16"
+                />
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.60449 6.50011H8.18949L5.74949 8.94011C5.55449 9.13511 5.55449 9.45511 5.74949 9.65011C5.94449 9.84511 6.25949 9.84511 6.45449 9.65011L9.74949 6.35511C9.94449 6.16011 9.94449 5.84511 9.74949 5.65011L6.45949 2.35011C6.26449 2.15511 5.94949 2.15511 5.75449 2.35011C5.55949 2.54511 5.55949 2.86011 5.75449 3.05511L8.18949 5.50011H2.60449C2.32949 5.50011 2.10449 5.72511 2.10449 6.00011C2.10449 6.27511 2.32949 6.50011 2.60449 6.50011Z" fill="currentColor"></path>
+                  </svg>
+                </div>
+              </div>
+            </a>
+
+            {/* Better care coordination */}
+            <a href="#" className="group bg-white rounded-2xl shadow-sm hover:shadow-md transition-all p-8 flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-2xl font-light">
+                  Better <span className="text-[#347866] font-normal">care coordination</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <img 
+                  src="https://cdn.prod.website-files.com/632a21d0ec93a082b11988a0/65d577f2611a585c1062783d_coordination.svg" 
+                  alt="rotary phone illustration"
+                  className="w-20 h-20"
+                />
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.60449 6.50011H8.18949L5.74949 8.94011C5.55449 9.13511 5.55449 9.45511 5.74949 9.65011C5.94449 9.84511 6.25949 9.84511 6.45449 9.65011L9.74949 6.35511C9.94449 6.16011 9.94449 5.84511 9.74949 5.65011L6.45949 2.35011C6.26449 2.15511 5.94949 2.15511 5.75449 2.35011C5.55949 2.54511 5.55949 2.86011 5.75449 3.05511L8.18949 5.50011H2.60449C2.32949 5.50011 2.10449 5.72511 2.10449 6.00011C2.10449 6.27511 2.32949 6.50011 2.60449 6.50011Z" fill="currentColor"></path>
+                  </svg>
+                </div>
+              </div>
+            </a>
+
+            {/* Get the answers you need */}
+            <a href="#" className="group bg-white rounded-2xl shadow-sm hover:shadow-md transition-all p-8 flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-2xl font-light">
+                  Get the <span className="text-[#D4A574] font-normal">answers</span> you need
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <img 
+                  src="https://cdn.prod.website-files.com/632a21d0ec93a082b11988a0/65d577f2611a585c10627840_answers.svg" 
+                  alt="illustration magnifying glass"
+                  className="w-16 h-16"
+                />
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.60449 6.50011H8.18949L5.74949 8.94011C5.55449 9.13511 5.55449 9.45511 5.74949 9.65011C5.94449 9.84511 6.25949 9.84511 6.45449 9.65011L9.74949 6.35511C9.94449 6.16011 9.94449 5.84511 9.74949 5.65011L6.45949 2.35011C6.26449 2.15511 5.94949 2.15511 5.75449 2.35011C5.55949 2.54511 5.55949 2.86011 5.75449 3.05511L8.18949 5.50011H2.60449C2.32949 5.50011 2.10449 5.72511 2.10449 6.00011C2.10449 6.27511 2.32949 6.50011 2.60449 6.50011Z" fill="currentColor"></path>
+                  </svg>
+                </div>
+              </div>
+            </a>
           </div>
-        )}
-      </div>
-    </main>
+        </div>
+      </section>
+    </div>
   );
 }
