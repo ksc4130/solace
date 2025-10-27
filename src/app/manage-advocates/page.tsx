@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { Advocate, AdvocatesResponse } from "@/types/advocate";
 import AdvocateDialog from "@/Components/AdvocateDialog";
+import AdvocateSearchInput from "@/components/AdvocateSearchInput";
+import { filterAdvocates } from "@/utils/advocateFilters";
 
 export default function ManageAdvocatesPage() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
+  const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -25,6 +29,7 @@ export default function ManageAdvocatesPage() {
 
         const jsonResponse: AdvocatesResponse = await response.json();
         setAdvocates(jsonResponse.data);
+        setFilteredAdvocates(jsonResponse.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
         console.error("Error fetching advocates:", err);
@@ -35,6 +40,18 @@ export default function ManageAdvocatesPage() {
 
     fetchAdvocates();
   }, []);
+
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    const filtered = filterAdvocates(advocates, value);
+    setFilteredAdvocates(filtered);
+  };
+
+  const handleReset = () => {
+    setSearchTerm("");
+    setFilteredAdvocates(advocates);
+  };
 
   const formatPhoneNumber = (phoneNumber: number) => {
     const phone = phoneNumber.toString();
@@ -59,7 +76,9 @@ export default function ManageAdvocatesPage() {
         }
 
         // Remove advocate from state
-        setAdvocates(advocates.filter(adv => adv.id !== id));
+        const updatedAdvocates = advocates.filter(adv => adv.id !== id);
+        setAdvocates(updatedAdvocates);
+        setFilteredAdvocates(filterAdvocates(updatedAdvocates, searchTerm));
       } catch (err) {
         console.error("Error deleting advocate:", err);
         alert("Failed to delete advocate. Please try again.");
@@ -93,11 +112,15 @@ export default function ManageAdvocatesPage() {
       const result = await response.json();
 
       if (dialogMode === "add") {
-        setAdvocates([...advocates, result.data]);
+        const updatedAdvocates = [...advocates, result.data];
+        setAdvocates(updatedAdvocates);
+        setFilteredAdvocates(filterAdvocates(updatedAdvocates, searchTerm));
       } else {
-        setAdvocates(advocates.map(adv => 
+        const updatedAdvocates = advocates.map(adv => 
           adv.id === selectedAdvocate?.id ? result.data : adv
-        ));
+        );
+        setAdvocates(updatedAdvocates);
+        setFilteredAdvocates(filterAdvocates(updatedAdvocates, searchTerm));
       }
 
       setIsDialogOpen(false);
@@ -133,6 +156,15 @@ export default function ManageAdvocatesPage() {
           >
             Add New Advocate
           </button>
+        </div>
+
+        {/* Search Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <AdvocateSearchInput
+            searchTerm={searchTerm}
+            onSearchChange={handleSearch}
+            onReset={handleReset}
+          />
         </div>
 
         {/* Loading State */}
@@ -173,17 +205,19 @@ export default function ManageAdvocatesPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {advocates.length === 0 ? (
+                  {filteredAdvocates.length === 0 ? (
                     <tr>
                       <td
                         colSpan={7}
                         className="px-6 py-4 text-center text-gray-500"
                       >
-                        No advocates found.
+                        {searchTerm 
+                          ? "No advocates found matching your search criteria." 
+                          : "No advocates found."}
                       </td>
                     </tr>
                   ) : (
-                    advocates.map((advocate) => (
+                    filteredAdvocates.map((advocate) => (
                       <tr key={advocate.id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
@@ -236,6 +270,11 @@ export default function ManageAdvocatesPage() {
                 </tbody>
               </table>
             </div>
+            {filteredAdvocates.length > 0 && searchTerm && (
+              <div className="bg-gray-50 px-6 py-3 text-sm text-gray-600">
+                Showing {filteredAdvocates.length} of {advocates.length} advocates
+              </div>
+            )}
           </div>
         )}
       </div>

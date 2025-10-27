@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { Advocate, AdvocatesResponse } from "@/types/advocate";
+import AdvocateSearchInput from "@/components/AdvocateSearchInput";
+import { filterAdvocates } from "@/utils/advocateFilters";
 
 export default function Home() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
@@ -35,36 +37,11 @@ export default function Home() {
     fetchAdvocates();
   }, []);
 
-  const filterAdvocates = useCallback(
-    (term: string) => {
-      if (!term) {
-        setFilteredAdvocates(advocates);
-        return;
-      }
-
-      const lowerSearchTerm = term.toLowerCase();
-      const filtered = advocates.filter((advocate) => {
-        return (
-          advocate.firstName.toLowerCase().includes(lowerSearchTerm) ||
-          advocate.lastName.toLowerCase().includes(lowerSearchTerm) ||
-          advocate.city.toLowerCase().includes(lowerSearchTerm) ||
-          advocate.degree.toLowerCase().includes(lowerSearchTerm) ||
-          advocate.specialties.some((specialty) =>
-            specialty.toLowerCase().includes(lowerSearchTerm)
-          ) ||
-          advocate.yearsOfExperience.toString().includes(term)
-        );
-      });
-
-      setFilteredAdvocates(filtered);
-    },
-    [advocates]
-  );
-
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
-    filterAdvocates(value);
+    const filtered = filterAdvocates(advocates, value);
+    setFilteredAdvocates(filtered);
   };
 
   const handleReset = () => {
@@ -99,22 +76,11 @@ export default function Home() {
         {/* Search Section */}
         <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
           <div className="max-w-4xl mx-auto">
-            <div className="flex gap-4 items-center">
-              <input
-                id="search"
-                type="text"
-                value={searchTerm}
-                onChange={handleSearch}
-                placeholder="Search by name, city, degree, specialty, or experience"
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              />
-              <button
-                onClick={handleReset}
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors font-medium whitespace-nowrap"
-              >
-                Reset Search
-              </button>
-            </div>
+            <AdvocateSearchInput
+              searchTerm={searchTerm}
+              onSearchChange={handleSearch}
+              onReset={handleReset}
+            />
           </div>
         </div>
 
