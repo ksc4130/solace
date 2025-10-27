@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Advocate } from "@/types/advocate";
+import { Specialty } from "@/types/specialty";
 
 interface AdvocateDialogProps {
   isOpen: boolean;
@@ -29,13 +30,28 @@ export default function AdvocateDialog({
     phoneNumber: 0,
   });
 
-  const [specialtyInput, setSpecialtyInput] = useState("");
+  const [availableSpecialties, setAvailableSpecialties] = useState<Specialty[]>([]);
+  const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState<number[]>([]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Fetch available specialties
+    fetchSpecialties();
     return () => setMounted(false);
   }, []);
+
+  const fetchSpecialties = async () => {
+    try {
+      const response = await fetch('/api/specialties');
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableSpecialties(data);
+      }
+    } catch (error) {
+      console.error('Error fetching specialties:', error);
+    }
+  };
 
   useEffect(() => {
     if (advocate && mode === "edit") {
@@ -48,6 +64,11 @@ export default function AdvocateDialog({
         yearsOfExperience: advocate.yearsOfExperience,
         phoneNumber: advocate.phoneNumber,
       });
+      // Set selected specialty IDs based on specialty names
+      const specialtyIds = advocate.specialties
+        .map(name => availableSpecialties.find(s => s.name === name)?.id)
+        .filter((id): id is number => id !== undefined);
+      setSelectedSpecialtyIds(specialtyIds);
     } else {
       setFormData({
         firstName: "",
@@ -58,8 +79,9 @@ export default function AdvocateDialog({
         yearsOfExperience: 0,
         phoneNumber: 0,
       });
+      setSelectedSpecialtyIds([]);
     }
-  }, [advocate, mode]);
+  }, [advocate, mode, availableSpecialties]);
 
   useEffect(() => {
     // Prevent body scroll when dialog is open
@@ -84,21 +106,24 @@ export default function AdvocateDialog({
     }));
   };
 
-  const handleAddSpecialty = () => {
-    if (specialtyInput.trim() && !formData.specialties?.includes(specialtyInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        specialties: [...(prev.specialties || []), specialtyInput.trim()],
+  const handleSpecialtyToggle = (specialtyId: number) => {
+    setSelectedSpecialtyIds(prev => {
+      const newIds = prev.includes(specialtyId)
+        ? prev.filter(id => id !== specialtyId)
+        : [...prev, specialtyId];
+      
+      // Update formData with specialty names
+      const selectedSpecialtyNames = newIds
+        .map(id => availableSpecialties.find(s => s.id === id)?.name)
+        .filter((name): name is string => name !== undefined);
+      
+      setFormData(prevData => ({
+        ...prevData,
+        specialties: selectedSpecialtyNames,
       }));
-      setSpecialtyInput("");
-    }
-  };
-
-  const handleRemoveSpecialty = (specialty: string) => {
-    setFormData(prev => ({
-      ...prev,
-      specialties: prev.specialties?.filter(s => s !== specialty) || [],
-    }));
+      
+      return newIds;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -151,7 +176,7 @@ export default function AdvocateDialog({
             </div>
 
             {/* Form Body */}
-            <div className="px-6 py-4 overflow-y-auto flex-1">
+            <div className="px-6 py-4 flex-1" style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 140px)' }}>
               <form onSubmit={handleSubmit} id="advocate-form">
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -220,6 +245,7 @@ export default function AdvocateDialog({
                       <option value="PA">PA (Physician Assistant)</option>
                       <option value="MD">MD (Doctor of Medicine)</option>
                       <option value="DO">DO (Doctor of Osteopathic Medicine)</option>
+                      <option value="PhD">PhD (Doctor)</option>
                       <option value="MSW">MSW (Master of Social Work)</option>
                       <option value="Other">Other</option>
                     </select>
@@ -264,47 +290,42 @@ export default function AdvocateDialog({
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Specialties
                     </label>
-                    <div className="flex gap-2 mb-2">
-                      <input
-                        type="text"
-                        value={specialtyInput}
-                        onChange={(e) => setSpecialtyInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleAddSpecialty();
-                          }
-                        }}
-                        placeholder="Add a specialty (e.g., Cardiology)"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddSpecialty}
-                        className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors"
-                      >
-                        Add
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.specialties?.map((specialty, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                    <div className="border border-gray-300 rounded-md p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                      {availableSpecialties.map((specialty) => (
+                        <label
+                          key={specialty.id}
+                          className="flex items-center p-2 hover:bg-gray-50 cursor-pointer rounded"
                         >
-                          {specialty}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSpecialty(specialty)}
-                            className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-blue-400 hover:text-blue-600"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </span>
+                          <input
+                            type="checkbox"
+                            checked={selectedSpecialtyIds.includes(specialty.id)}
+                            onChange={() => handleSpecialtyToggle(specialty.id)}
+                            className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            {specialty.name}
+                          </span>
+                        </label>
                       ))}
                     </div>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Click to select or deselect specialties
+                    </p>
+                    {formData.specialties && formData.specialties.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm font-medium text-gray-700 mb-1">Selected ({formData.specialties.length}):</p>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.specialties.map((specialty, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800"
+                            >
+                              {specialty}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </form>
