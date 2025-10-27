@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Advocate, AdvocatesResponse } from "@/types/advocate";
+import AdvocateDialog from "@/Components/AdvocateDialog";
 
 export default function ManageAdvocatesPage() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedAdvocate, setSelectedAdvocate] = useState<Advocate | null>(null);
+  const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
 
   useEffect(() => {
     const fetchAdvocates = async () => {
@@ -37,15 +41,69 @@ export default function ManageAdvocatesPage() {
     return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
   };
 
-  const handleEdit = (id: number) => {
-    // TODO: Implement edit functionality
-    console.log("Edit advocate with id:", id);
+  const handleEdit = (advocate: Advocate) => {
+    setSelectedAdvocate(advocate);
+    setDialogMode("edit");
+    setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    // TODO: Implement delete functionality
+  const handleDelete = async (id: number) => {
     if (window.confirm("Are you sure you want to delete this advocate?")) {
-      console.log("Delete advocate with id:", id);
+      try {
+        const response = await fetch(`/api/advocates?id=${id}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to delete advocate");
+        }
+
+        // Remove advocate from state
+        setAdvocates(advocates.filter(adv => adv.id !== id));
+      } catch (err) {
+        console.error("Error deleting advocate:", err);
+        alert("Failed to delete advocate. Please try again.");
+      }
+    }
+  };
+
+  const handleAddNew = () => {
+    setSelectedAdvocate(null);
+    setDialogMode("add");
+    setIsDialogOpen(true);
+  };
+
+  const handleDialogSubmit = async (advocateData: Partial<Advocate>) => {
+    try {
+      const method = dialogMode === "add" ? "POST" : "PUT";
+      const body = dialogMode === "edit" && selectedAdvocate 
+        ? { ...advocateData, id: selectedAdvocate.id }
+        : advocateData;
+
+      const response = await fetch("/api/advocates", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${dialogMode} advocate`);
+      }
+
+      const result = await response.json();
+
+      if (dialogMode === "add") {
+        setAdvocates([...advocates, result.data]);
+      } else {
+        setAdvocates(advocates.map(adv => 
+          adv.id === selectedAdvocate?.id ? result.data : adv
+        ));
+      }
+
+      setIsDialogOpen(false);
+    } catch (err) {
+      console.error(`Error ${dialogMode}ing advocate:`, err);
+      alert(`Failed to ${dialogMode} advocate. Please try again.`);
     }
   };
 
@@ -69,7 +127,10 @@ export default function ManageAdvocatesPage() {
           <h1 className="text-4xl font-medium text-gray-900">
             Manage Advocates
           </h1>
-          <button className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition-colors font-medium">
+          <button 
+            onClick={handleAddNew}
+            className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition-colors font-medium"
+          >
             Add New Advocate
           </button>
         </div>
@@ -156,7 +217,7 @@ export default function ManageAdvocatesPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div className="flex gap-2">
                             <button
-                              onClick={() => handleEdit(advocate.id)}
+                              onClick={() => handleEdit(advocate)}
                               className="text-blue-600 hover:text-blue-900"
                             >
                               Edit
@@ -178,6 +239,14 @@ export default function ManageAdvocatesPage() {
           </div>
         )}
       </div>
+
+      <AdvocateDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        onSubmit={handleDialogSubmit}
+        advocate={selectedAdvocate}
+        mode={dialogMode}
+      />
     </main>
   );
 }
