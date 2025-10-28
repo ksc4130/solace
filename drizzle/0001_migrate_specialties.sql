@@ -27,37 +27,7 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
--- Insert all specialties from the seed file
-INSERT INTO specialties (name) VALUES
-  ('Bipolar'),
-  ('LGBTQ'),
-  ('Medication/Prescribing'),
-  ('Suicide History/Attempts'),
-  ('General Mental Health (anxiety, depression, stress, grief, life transitions)'),
-  ('Men''s issues'),
-  ('Relationship Issues (family, friends, couple, etc)'),
-  ('Trauma & PTSD'),
-  ('Personality disorders'),
-  ('Personal growth'),
-  ('Substance use/abuse'),
-  ('Pediatrics'),
-  ('Women''s issues (post-partum, infertility, family planning)'),
-  ('Chronic pain'),
-  ('Weight loss & nutrition'),
-  ('Eating disorders'),
-  ('Diabetic Diet and nutrition'),
-  ('Coaching (leadership, career, academic and wellness)'),
-  ('Life coaching'),
-  ('Obsessive-compulsive disorders'),
-  ('Neuropsychological evaluations & testing (ADHD testing)'),
-  ('Attention and Hyperactivity (ADHD)'),
-  ('Sleep issues'),
-  ('Schizophrenia and psychotic disorders'),
-  ('Learning disorders'),
-  ('Domestic abuse')
-ON CONFLICT (name) DO NOTHING;
-
--- Migrate existing advocate specialty data from JSONB to normalized tables
+-- Migrate existing advocate specialty data from JSONB to normalized tables (if any)
 DO $$
 DECLARE
     advocate_record RECORD;
@@ -77,7 +47,7 @@ BEGIN
             SELECT id INTO specialty_id_val 
             FROM specialties 
             WHERE name = specialty_text;
-            
+
             -- Insert the relationship if specialty exists
             IF specialty_id_val IS NOT NULL THEN
                 INSERT INTO advocate_specialties (advocate_id, specialty_id)

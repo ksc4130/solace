@@ -31,10 +31,17 @@ const specialtiesList = [
 ];
 
 const randomSpecialtyIndices = () => {
-  const random1 = Math.floor(Math.random() * 24);
-  const random2 = Math.floor(Math.random() * (24 - random1)) + random1 + 1;
-
-  return [random1, random2];
+  const totalSpecialties = specialtiesList.length; // 26 specialties
+  const indices = new Set<number>();
+  
+  // Generate 2-10 random unique indices
+  const count = Math.floor(Math.random() * 9) + 2;
+  
+  while (indices.size < count) {
+    indices.add(Math.floor(Math.random() * totalSpecialties));
+  }
+  
+  return Array.from(indices);
 };
 
 const advocateData = [
@@ -182,15 +189,29 @@ async function seedAdvocatesWithSpecialties() {
     return;
   }
 
-  // First ensure all specialties exist
-  for (const specialty of specialtiesList) {
-    await (db as any).insert(specialtiesTable)
-      .values({ name: specialty })
-      .onConflictDoNothing();
+  if (!db) {
+    console.error("Database not configured");
+    return;
+  }
+
+  // Check if specialties table is empty
+  const existingSpecialties = await db.select().from(specialtiesTable);
+  
+  if (existingSpecialties.length === 0) {
+    console.log("🌱 Seeding specialties...");
+    // Insert all specialties if table is empty
+    for (const specialty of specialtiesList) {
+      await (db as any).insert(specialtiesTable)
+        .values({ name: specialty })
+        .onConflictDoNothing();
+    }
+    console.log(`✅ Inserted ${specialtiesList.length} specialties`);
+  } else {
+    console.log(`ℹ️  Specialties already exist (${existingSpecialties.length} found), skipping insert`);
   }
 
   // Get all specialty IDs
-  const allSpecialties = await (db as any).select().from(specialtiesTable);
+  const allSpecialties = await db.select().from(specialtiesTable);
   const specialtyMap = new Map(allSpecialties.map((s: any) => [s.name, s.id]));
 
   // Insert advocates and their specialties
@@ -218,6 +239,11 @@ async function seedAdvocatesWithSpecialties() {
       }
     }
   }
+
+  const allDbAdvocates = await db.select().from(advocates);
+  const allDbSpecialties = await db.select().from(specialtiesTable);
+
+  return { allDbAdvocates, allDbSpecialties };
 }
 
 export { advocateData, specialtiesList, seedAdvocatesWithSpecialties };
