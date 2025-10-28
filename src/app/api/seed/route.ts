@@ -1,9 +1,16 @@
 import db from "../../../db";
 import { advocates } from "../../../db/schema";
-import { advocateData } from "../../../db/seed/advocates";
+import { seedAdvocatesWithSpecialties } from "../../../db/seed/advocates";
 
 export async function POST() {
-  const records = await db.insert(advocates).values(advocateData).returning();
+  if (!db) {
+    return Response.json(
+      { error: "Database not configured" },
+      { status: 500 }
+    );
+  }
 
-  return Response.json({ advocates: records });
+  const records = await seedAdvocatesWithSpecialties();
+
+  return Response.json(records);
 }
