@@ -2,7 +2,7 @@
 
 import { useEffect, useState, ChangeEvent } from "react";
 import { Advocate, AdvocatesResponse } from "@/types/advocate";
-import AdvocateDialog from "@/Components/AdvocateDialog";
+import AdvocateDialog from "@/components/AdvocateDialog";
 import AdvocateSearchInput from "@/components/AdvocateSearchInput";
 import { filterAdvocates } from "@/utils/advocateFilters";
 
